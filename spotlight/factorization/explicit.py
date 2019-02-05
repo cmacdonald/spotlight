@@ -155,8 +155,8 @@ class ExplicitFactorizationModel(object):
             user_id_max = user_ids.max()
 
         if user_id_max >= self._num_users:
-            raise ValueError('Maximum user id greater '
-                             'than number of users in model.')
+            raise ValueError('Maximum user id (%d) greater '
+                             'than number of users in model (%d).' % (user_id_max,self._num_users))
 
         if allow_items_none and item_ids is None:
             return
@@ -167,8 +167,8 @@ class ExplicitFactorizationModel(object):
             item_id_max = item_ids.max()
 
         if item_id_max >= self._num_items:
-            raise ValueError('Maximum item id greater '
-                             'than number of items in model.')
+            raise ValueError('Maximum item id (%d) greater '
+                             'than number of items in model (%d).' % (item_id_max,self._num_items))
 
     def fit(self, interactions, verbose=False):
         """
