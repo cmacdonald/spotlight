@@ -5,13 +5,12 @@ import scipy.stats as st
 
 FLOAT_MAX = np.finfo(np.float32).max
 
-
-def mrr_score(model, test, train=None):
+def mrr_score(model, test, train=None, scores=None):
     """
-    Compute mean reciprocal rank (MRR) scores. One score
+    Compute reciprocal rank (MRR) scores. One score
     is given for every user with interactions in the test
-    set, representing the mean reciprocal rank of all their
-    test items.
+    set, representing the reciprocal rank of all the first
+    retrieved test items.
 
     Parameters
     ----------
@@ -23,37 +22,54 @@ def mrr_score(model, test, train=None):
     train: :class:`spotlight.interactions.Interactions`, optional
         Train interactions. If supplied, scores of known
         interactions will be set to very low values and so not
-        affect the MRR.
+        affect the RR.
+    scores: test scores for each user x item. Instead of evaluating model,
+        use the scores 
 
     Returns
     -------
 
     mrr scores: numpy array of shape (num_users,)
-        Array of MRR scores for each user in test.
+        Array of RR scores for each user in test.
     """
+
+    if scores is not None:
+        assert test.num_users == len(scores), "mismatch: num users in Interactions %d, num users in predictions was %d" % (testInteractions.num_users,len(predictions_for_each_user))
+        assert test.num_items == len(scores[0]), "mismatch: num items in Interactions %d, num items in predictions was %d" % (testInteractions.num_items, len(predictions_for_each_user[0]))
+  
 
     test = test.tocsr()
 
     if train is not None:
         train = train.tocsr()
 
-    mrrs = []
+    rrs = []
 
     for user_id, row in enumerate(test):
 
         if not len(row.indices):
+            rrs.append(0)
             continue
 
-        predictions = -model.predict(user_id)
+        if scores is not None:
+            predictions = -scores[i]
+        else:
+            predictions = -model.predict(user_id)
 
         if train is not None:
             predictions[train[user_id].indices] = FLOAT_MAX
 
-        mrr = (1.0 / st.rankdata(predictions)[row.indices]).mean()
+        rank = st.rankdata(predictions)[row.indices].min()
 
-        mrrs.append(mrr)
+        if cutoff > 0 and rank > cutoff:
+            rrs.append(0)
+            continue
 
-    return np.array(mrrs)
+        rr = (1.0 / rank)
+
+        rrs.append(rr)
+
+    return np.array(rrs)
 
 
 def sequence_mrr_score(model, test, exclude_preceding=False):
