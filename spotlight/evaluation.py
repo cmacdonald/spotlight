@@ -5,7 +5,7 @@ import scipy.stats as st
 
 FLOAT_MAX = np.finfo(np.float32).max
 
-def mrr_score(model, test, train=None, scores=None):
+def mrr_score(model, test, train=None, scores=None, k=10):
     """
     Compute reciprocal rank (MRR) scores. One score
     is given for every user with interactions in the test
@@ -25,6 +25,7 @@ def mrr_score(model, test, train=None, scores=None):
         affect the RR.
     scores: test scores for each user x item. Instead of evaluating model,
         use the scores 
+    k: rank cutoff for RR. defaults to 10. 0. means no cutoff
 
     Returns
     -------
@@ -61,7 +62,7 @@ def mrr_score(model, test, train=None, scores=None):
 
         rank = st.rankdata(predictions)[row.indices].min()
 
-        if cutoff > 0 and rank > cutoff:
+        if k > 0 and rank > k:
             rrs.append(0)
             continue
 
