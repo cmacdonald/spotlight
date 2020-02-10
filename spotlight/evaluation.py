@@ -1,11 +1,11 @@
 import numpy as np
 
 import scipy.stats as st
-
+from tqdm import tqdm
 
 FLOAT_MAX = np.finfo(np.float32).max
 
-def mrr_score(model, test, train=None, scores=None, k=10):
+def mrr_score(model, test, train=None, verbose=False, k=10):
     """
     Compute reciprocal rank (MRR) scores. One score
     is given for every user with interactions in the test
@@ -23,8 +23,7 @@ def mrr_score(model, test, train=None, scores=None, k=10):
         Train interactions. If supplied, scores of known
         interactions will be set to very low values and so not
         affect the RR.
-    scores: test scores for each user x item. Instead of evaluating model,
-        use the scores 
+    verbose: use a progress bar. defaults to False
     k: rank cutoff for RR. defaults to 10. 0. means no cutoff
 
     Returns
@@ -34,11 +33,6 @@ def mrr_score(model, test, train=None, scores=None, k=10):
         Array of RR scores for each user in test.
     """
 
-    if scores is not None:
-        assert test.num_users == len(scores), "mismatch: num users in Interactions %d, num users in predictions was %d" % (testInteractions.num_users,len(predictions_for_each_user))
-        assert test.num_items == len(scores[0]), "mismatch: num items in Interactions %d, num items in predictions was %d" % (testInteractions.num_items, len(predictions_for_each_user[0]))
-  
-
     test = test.tocsr()
 
     if train is not None:
@@ -46,16 +40,16 @@ def mrr_score(model, test, train=None, scores=None, k=10):
 
     rrs = []
 
-    for user_id, row in enumerate(test):
+    enum=enumerate(test)
+    if verbose:
+        enum=tqdm(enum)
+    for user_id, row in enum:
 
         if not len(row.indices):
             rrs.append(0)
             continue
 
-        if scores is not None:
-            predictions = -scores[i]
-        else:
-            predictions = -model.predict(user_id)
+        predictions = -model.predict(user_id)
 
         if train is not None:
             predictions[train[user_id].indices] = FLOAT_MAX
